@@ -25,7 +25,8 @@ type StatusResponse = {
   tokens?: TokenEntry[];
 };
 
-const API_STATUS_URL = 'http://localhost:3000/api/status';
+const BACKEND_ORIGIN = 'https://audit-swap.vercel.app';
+const API_STATUS_URL = `${BACKEND_ORIGIN}/api/status`;
 const MOCK_BASE_TIME = Date.now();
 
 const mockTokens: TokenEntry[] = [
@@ -90,7 +91,7 @@ const mockLogs: SettlementLog[] = [
   {
     timestamp: new Date(MOCK_BASE_TIME - 14_000).toISOString(),
     type: 'WARN',
-    message: 'Backend unavailable at localhost:3000. Displaying mock token registry.',
+    message: 'Deployed backend unavailable. Displaying mock token registry.',
   },
 ];
 
@@ -109,11 +110,11 @@ const messageStyle: Record<LogType, string> = {
 };
 
 const tokenStatusStyle: Record<TokenStatus, string> = {
-  detected: 'text-zinc-300 bg-white/[0.045]',
-  auditing: 'text-amber-200 bg-amber-300/10',
-  rejected: 'text-rose-200 bg-rose-300/10',
-  swapping: 'text-sky-200 bg-sky-300/10',
-  swapped: 'text-emerald-200 bg-emerald-300/10',
+  detected: 'text-zinc-300 bg-white/[0.06] border-white/[0.08]',
+  auditing: 'text-amber-200 bg-amber-300/10 border-amber-300/15',
+  rejected: 'text-rose-200 bg-rose-300/10 border-rose-300/15',
+  swapping: 'text-sky-200 bg-sky-300/10 border-sky-300/15',
+  swapped: 'text-emerald-200 bg-emerald-300/10 border-emerald-300/15',
 };
 
 function formatLogTime(timestamp: string) {
@@ -142,22 +143,23 @@ function TokenLogo({ token }: { token: TokenEntry }) {
   const [imageFailed, setImageFailed] = useState(false);
   const initials = token.symbol.slice(0, 2).toUpperCase();
 
-  if (token.logoURI && !imageFailed) {
-    return (
-      <img
-        src={token.logoURI}
-        alt={`${token.name} logo`}
-        className="h-full w-full object-cover"
-        loading="lazy"
-        onError={() => setImageFailed(true)}
-      />
-    );
-  }
-
   return (
-    <span className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.32),rgba(255,255,255,0.08)_42%,rgba(255,255,255,0.03)_100%)] text-[11px] font-semibold text-zinc-200">
-      {initials}
-    </span>
+    <div className="relative h-9 w-9 overflow-hidden rounded-full border border-white/[0.1] bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.28),rgba(255,255,255,0.08)_42%,rgba(255,255,255,0.03)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_8px_18px_rgba(0,0,0,0.35)]">
+      {token.logoURI && !imageFailed ? (
+        <img
+          src={token.logoURI}
+          alt={`${token.name} logo`}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-zinc-100">
+          {initials}
+        </span>
+      )}
+      <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/[0.08]" />
+    </div>
   );
 }
 
@@ -296,157 +298,175 @@ export default function App() {
         </header>
 
         <main className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-8 lg:pb-8">
-          <section className="flex min-h-0 flex-col overflow-hidden rounded-sm bg-[#09090a]/90 shadow-[0_24px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)]">
-            <div className="grid shrink-0 grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-4 sm:px-5">
+          <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#080809]/92 shadow-[0_24px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div className="flex shrink-0 items-start justify-between gap-6 px-5 py-5 sm:px-6">
               <div>
-                <div className="text-xs text-zinc-500">Tokens</div>
-                <div className="mt-1 font-mono text-xl text-zinc-100">{tokens.length}</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Token Registry</div>
+                <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">Mapped assets</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
+                  Live token metadata from the settlement backend, including logo, name, address, and current audit state.
+                </p>
+              </div>
+              <div className="hidden shrink-0 rounded-2xl border border-white/[0.07] bg-black/30 px-5 py-3 text-right sm:block">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Assets</div>
+                <div className="mt-1 font-mono text-3xl text-zinc-100">{tokens.length}</div>
+              </div>
+            </div>
+
+            <div className="mx-5 h-px bg-white/[0.06] sm:mx-6" />
+
+            <div className="grid shrink-0 grid-cols-2 gap-3 px-5 py-4 sm:grid-cols-4 sm:px-6">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Queries</div>
+                <div className="mt-1 font-mono text-xl text-zinc-100">{tokensScanned.toLocaleString()}</div>
               </div>
               <div>
-                <div className="text-xs text-zinc-500">Success</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Success</div>
                 <div className="mt-1 font-mono text-xl text-emerald-300">{logCounts.SUCCESS}</div>
               </div>
               <div>
-                <div className="text-xs text-zinc-500">Warnings</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Warnings</div>
                 <div className="mt-1 font-mono text-xl text-amber-300">{logCounts.WARN}</div>
               </div>
               <div>
-                <div className="text-xs text-zinc-500">Last Sync</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Last Sync</div>
                 <div className="mt-1 truncate font-mono text-sm text-zinc-300">{lastSync}</div>
               </div>
             </div>
 
-            <div className="mx-4 h-px bg-white/[0.06] sm:mx-5" />
-
-            <div className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-5">
-              <div>
-                <h2 className="text-sm font-medium text-zinc-200">Execution Terminal</h2>
-                <p className="mt-1 text-xs text-zinc-500">Live settlement telemetry from the AuditSwap core.</p>
-              </div>
-              <div className="hidden font-mono text-xs text-zinc-500 sm:block">polling 1000ms</div>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 font-mono text-xs sm:px-5">
-              {logs.length === 0 ? (
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 sm:px-6">
+              {tokens.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
                   <div className="max-w-sm text-center">
                     <div className="mx-auto h-2 w-2 rounded-full bg-zinc-600" />
-                    <p className="mt-4 text-sm text-zinc-300">Waiting for settlement logs.</p>
+                    <p className="mt-4 text-sm text-zinc-300">Waiting for token metadata.</p>
                     <p className="mt-2 text-xs leading-5 text-zinc-500">
-                      Start the backend status endpoint and AuditSwap will stream activity here.
+                      AuditSwap will populate this registry after the next backend scan.
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-1">
-                  {logs.map((log, index) => (
+                <div className="grid gap-3 xl:grid-cols-2">
+                  {tokens.map((token) => (
                     <div
-                      key={`${log.timestamp}-${index}-${log.type}-${log.message}`}
-                      className="grid grid-cols-[74px_68px_minmax(0,1fr)] items-start gap-3 rounded-sm px-2 py-2 hover:bg-white/[0.035]"
+                      key={token.address}
+                      className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-white/[0.06] bg-black/30 p-4 transition-colors hover:border-white/[0.13] hover:bg-white/[0.035]"
                     >
-                      <span className="pt-0.5 tabular-nums text-zinc-600">{formatLogTime(log.timestamp)}</span>
-                      <span
-                        className={`inline-flex h-5 items-center justify-center rounded-sm px-2 text-[10px] font-semibold ${typeStyle[log.type]}`}
-                      >
-                        {log.type}
-                      </span>
-                      <span className={`break-words leading-5 ${messageStyle[log.type]}`}>{log.message}</span>
+                      <div className="h-14 w-14">
+                        <TokenLogo token={token} />
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-baseline gap-2">
+                          <div className="truncate text-lg font-semibold text-zinc-100">{token.name}</div>
+                          <div className="shrink-0 font-mono text-xs text-zinc-500">{token.symbol}</div>
+                        </div>
+                        <div className="mt-2 font-mono text-xs text-zinc-600">
+                          <span className="sm:hidden">{truncateAddress(token.address)}</span>
+                          <span className="hidden truncate sm:block">{token.address}</span>
+                        </div>
+                      </div>
+
+                      <div className={`shrink-0 rounded-lg border px-3 py-1.5 font-mono text-[10px] uppercase ${tokenStatusStyle[token.status]}`}>
+                        {token.status}
+                      </div>
                     </div>
                   ))}
-                  <div ref={terminalBottomRef} />
                 </div>
               )}
             </div>
           </section>
 
-          <aside className="flex min-h-0 flex-col overflow-hidden rounded-sm bg-[#0d0d0f]/92 shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)]">
-            <div className="px-5 py-5">
-              <div className="text-xs text-zinc-500">Session Metrics</div>
-              <h2 className="mt-2 text-xl font-semibold text-white">Settlement session</h2>
+          <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0b0b0d]/94 shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div className="shrink-0 px-5 py-4">
+              <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Session Metrics</div>
+              <h2 className="mt-1.5 text-lg font-semibold text-white">Settlement session</h2>
             </div>
 
             <div className="h-px bg-white/[0.06]" />
 
-            <div className="space-y-6 px-5 py-6">
-              <div>
-                <div className="text-xs text-zinc-500">Data Source</div>
-                <div className="mt-2 text-base text-zinc-100">
+            <div className="grid shrink-0 grid-cols-2 gap-2.5 px-5 py-4">
+              <div className="col-span-2 rounded-xl border border-white/[0.06] bg-black/30 p-3">
+                <div className="text-[11px] text-zinc-500">Data Source</div>
+                <div className="mt-1 truncate text-sm text-zinc-100">
                   {connectionMode === 'live' ? 'Birdeye Enterprise API' : 'Mock Registry Fallback'}
                 </div>
               </div>
 
-              <div>
-                <div className="text-xs text-zinc-500">Query Events</div>
-                <div className="mt-2 font-mono text-5xl font-semibold tabular-nums text-white">
+              <div className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
+                <div className="text-[11px] text-zinc-500">Queries</div>
+                <div className="mt-1 font-mono text-2xl font-semibold tabular-nums text-white">
                   {tokensScanned.toLocaleString()}
                 </div>
               </div>
 
-              <div>
-                <div className="text-xs text-zinc-500">Tokens Mapped</div>
-                <div className="mt-2 font-mono text-2xl text-zinc-100">{tokens.length.toLocaleString()}</div>
+              <div className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
+                <div className="text-[11px] text-zinc-500">Mapped</div>
+                <div className="mt-1 font-mono text-2xl text-zinc-100">{tokens.length.toLocaleString()}</div>
               </div>
 
-              <div>
-                <div className="text-xs text-zinc-500">Slippage Guard</div>
-                <div className="mt-2 font-mono text-2xl text-zinc-100">2.0%</div>
+              <div className="col-span-2 rounded-xl border border-white/[0.06] bg-black/30 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-[11px] text-zinc-500">Slippage Guard</div>
+                  <div className="font-mono text-base text-zinc-100">2.0%</div>
+                </div>
               </div>
             </div>
 
             <div className="mx-5 h-px bg-white/[0.06]" />
 
-            <div className="min-h-0 flex-1 px-5 py-6">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="text-xs text-zinc-500">Token Registry</div>
-                <div className="font-mono text-[11px] text-zinc-600">{tokens.length} assets</div>
+            <div className="flex min-h-0 flex-1 flex-col px-5 py-4">
+              <div className="mb-3 flex shrink-0 items-center justify-between">
+                <div>
+                  <div className="text-xs text-zinc-500">Execution Terminal</div>
+                  <div className="mt-1 font-mono text-[11px] text-zinc-600">polling 1000ms</div>
+                </div>
+                <div className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] px-2.5 py-1 font-mono text-[10px] text-zinc-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                  Live
+                </div>
               </div>
 
-              <div className="max-h-[34vh] space-y-2 overflow-y-auto pr-1 lg:max-h-none">
-                {tokens.length === 0 ? (
-                  <div className="rounded-sm bg-black/25 p-4 text-sm leading-6 text-zinc-500">
-                    No token metadata received yet. The backend will populate this list after the next Birdeye scan.
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 font-mono text-[11px]">
+                {logs.length === 0 ? (
+                  <div className="rounded-xl border border-white/[0.06] bg-black/25 p-4 text-sm leading-6 text-zinc-500">
+                    Waiting for settlement logs.
                   </div>
                 ) : (
-                  tokens.map((token) => (
-                    <div key={token.address} className="flex items-center gap-3 rounded-sm bg-black/25 p-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/[0.06] text-xs font-semibold text-zinc-400">
-                        <TokenLogo token={token} />
+                  logs.map((log, index) => (
+                    <div
+                      key={`${log.timestamp}-${index}-${log.type}-${log.message}`}
+                      className="rounded-xl border border-white/[0.045] bg-black/30 p-3"
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <span className="tabular-nums text-zinc-600">{formatLogTime(log.timestamp)}</span>
+                        <span className={`rounded-md px-2 py-1 text-[9px] font-semibold ${typeStyle[log.type]}`}>
+                          {log.type}
+                        </span>
                       </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <div className="truncate text-sm font-medium text-zinc-100">{token.name}</div>
-                          <div className="shrink-0 font-mono text-[11px] text-zinc-500">{token.symbol}</div>
-                        </div>
-                        <div className="mt-1 font-mono text-[11px] text-zinc-600">{truncateAddress(token.address)}</div>
-                      </div>
-
-                      <div
-                        className={`shrink-0 rounded-sm px-2 py-1 font-mono text-[10px] uppercase ${tokenStatusStyle[token.status]}`}
-                      >
-                        {token.status}
-                      </div>
+                      <div className={`break-words leading-5 ${messageStyle[log.type]}`}>{log.message}</div>
                     </div>
                   ))
                 )}
+                <div ref={terminalBottomRef} />
               </div>
             </div>
 
             <div className="mx-5 h-px bg-white/[0.06]" />
 
-            <div className="px-5 py-5">
+            <div className="shrink-0 px-5 py-4">
               <div className="text-xs text-zinc-500">Risk Protocol</div>
-              <p className="mt-3 text-sm leading-6 text-zinc-300">
+              <p className="mt-2 text-xs leading-5 text-zinc-400">
                 The Markovian Execution Protocol evaluates every route as a state transition, balancing live
                 liquidity, recent slippage, and settlement pressure before autonomous execution.
               </p>
             </div>
 
-            <div className="px-5 pb-5">
-              <div className="rounded-sm bg-black/35 p-4">
+            <div className="shrink-0 px-5 pb-5">
+              <div className="rounded-xl border border-white/[0.06] bg-black/35 p-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-zinc-500">Core URL</span>
-                  <span className="font-mono text-zinc-300">localhost:3000</span>
+                  <span className="font-mono text-zinc-300">audit-swap.vercel.app</span>
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs">
                   <span className="text-zinc-500">Errors</span>
