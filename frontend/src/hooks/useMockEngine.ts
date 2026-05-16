@@ -64,6 +64,8 @@ export function useMockEngine() {
 
   // Core audit engine — runs inside a single stable useEffect to avoid stale closures
   useEffect(() => {
+    mountedRef.current = true; // re-arm after StrictMode double-invoke
+
     const sleep = (ms: number) =>
       new Promise<void>(resolve => setTimeout(resolve, ms));
 
