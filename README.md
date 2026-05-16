@@ -49,25 +49,25 @@ This is the core audit filter logic — sequential gates, **fail any = abort**.
 flowchart TD
     START([New token detected via /new_listing]) --> A{Mint authority present?}
     
-    A -->|Yes| REJECT1[❌ REJECT: Centralized mint risk]
+    A -->|Yes| REJECT1[ REJECT: Centralized mint risk]
     REJECT1 --> ABORT([Abort swap])
     
     A -->|No| B{Honeypot simulation score < threshold?}
     
-    B -->|No| REJECT2[❌ REJECT: Honeypot risk]
+    B -->|No| REJECT2[ REJECT: Honeypot risk]
     REJECT2 --> ABORT
     
     B -->|Yes| C{Top 10 holders concentration < 30%?}
     
-    C -->|No| REJECT3[❌ REJECT: Whale concentration risk]
+    C -->|No| REJECT3[ REJECT: Whale concentration risk]
     REJECT3 --> ABORT
     
     C -->|Yes| D{Liquidity > $50k?}
     
-    D -->|No| REJECT4[❌ REJECT: Insufficient liquidity]
+    D -->|No| REJECT4[ REJECT: Insufficient liquidity]
     REJECT4 --> ABORT
     
-    D -->|Yes| PASS([✅ PASS: Eligible for swap])
+    D -->|Yes| PASS([ PASS: Eligible for swap])
     PASS --> EXECUTE[Execute via Jupiter v6]
 ```
 
@@ -108,7 +108,7 @@ flowchart LR
 
 ---
 
-## 📊 Evaluation Architecture
+##  Evaluation Architecture
 
 The agent treats the incoming market stream as a sequential state system, analyzing risk metrics objectively to guarantee programmable capital guardrails:
 
@@ -124,15 +124,15 @@ The agent treats the incoming market stream as a sequential state system, analyz
 
 | Gate | Condition | Data Source | Action on Fail |
 |------|-----------|-------------|----------------|
-| 1 | Mint authority == null | Birdeye `/defi/token_security` | ❌ Reject |
-| 2 | Honeypot score < 0.05 | Birdeye simulation | ❌ Reject |
-| 3 | Top 10 holders ≤ 30% | Birdeye holder distribution | ❌ Reject |
-| 4 | Liquidity > $50k | Birdeye `/defi/token_overview` | ❌ Reject |
-| All gates pass | → | → | ✅ Execute Jupiter swap |
+| 1 | Mint authority == null | Birdeye `/defi/token_security` |  Reject |
+| 2 | Honeypot score < 0.05 | Birdeye simulation |  Reject |
+| 3 | Top 10 holders ≤ 30% | Birdeye holder distribution |  Reject |
+| 4 | Liquidity > $50k | Birdeye `/defi/token_overview` |  Reject |
+| All gates pass | → | → |  Execute Jupiter swap |
 
 ---
 
-## 🚀 Quick Start & Deployment
+##  Quick Start & Deployment
 
 ### Prerequisites
 
@@ -173,7 +173,7 @@ npm test
 
 ---
 
-## 📁 Repository Structure
+##  Repository Structure
 
 ```
 nexus-router/
@@ -190,7 +190,7 @@ nexus-router/
 
 ---
 
-## 🏆 Hackathon Qualification Checklist
+##  Hackathon Qualification Checklist
 
 - [x] **Product Utility:** Protects real capital by filtering out malicious token launches programmatically.
 - [x] **Technical Depth:** Combines read-only market analytics with low-latency write actions via decentralized liquidity routers.
@@ -199,16 +199,15 @@ nexus-router/
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for audit filter contribution guidelines.
 
 ---
 
-## 📄 License
+##  License
 
 MIT — see [LICENSE](LICENSE) for details.
-
 ---
 
 ## How to use this for your final submission today
