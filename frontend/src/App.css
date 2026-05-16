@@ -4,11 +4,14 @@
 
 @layer base {
   body {
-    @apply bg-[#050505] text-neutral-300 font-mono antialiased overflow-hidden selection:bg-neutral-800 selection:text-white;
+    @apply font-mono antialiased overflow-hidden;
+    @apply text-black bg-white dark:text-neutral-300 dark:bg-[#050505];
+    @apply selection:bg-neutral-200 selection:text-neutral-900;
+    @apply dark:selection:bg-neutral-800 dark:selection:text-white;
   }
 }
 
-/* Cinematic Film Grain Overlay */
+/* ── Film grain overlay ─────────────────────────────────────────────────── */
 .film-grain {
   position: fixed;
   top: 0;
@@ -17,18 +20,143 @@
   height: 100vh;
   pointer-events: none;
   z-index: 50;
-  opacity: 0.04;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
-/* Custom Scrollbar for Terminal */
+/* ── Scrollbars ─────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
+  height: 3px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #333;
+  background: #2a2a2a;
   border-radius: 2px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+}
+::-webkit-scrollbar-thumb {
+  background: #cccccc;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aaaaaa;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+/* ── Token row entrance animation ───────────────────────────────────────── */
+.token-row {
+  animation: slideInFromTop 0.2s ease-out;
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Swap history row entrance ──────────────────────────────────────────── */
+.swap-row {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Slow spin for the checking gate indicator ──────────────────────────── */
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  display: inline-block;
+  animation: spinSlow 1.4s linear infinite;
+}
+
+/* ── Toast slide-in ─────────────────────────────────────────────────────── */
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-slide-in {
+  animation: toastSlideIn 0.18s ease-out forwards;
+}
+
+/* ── Modal enter ────────────────────────────────────────────────────────── */
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.modal-enter {
+  animation: modalEnter 0.18s ease-out forwards;
+}
+
+/* ── Settings drawer slide-in ───────────────────────────────────────────── */
+@keyframes drawerSlideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.settings-drawer {
+  animation: drawerSlideIn 0.2s ease-out forwards;
+}
+
+/* ── Scan line shimmer on audit rows ────────────────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.checking-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(245, 158, 11, 0.04) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
 }
