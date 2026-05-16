@@ -1,4 +1,4 @@
-import type { AuditGate, SwapRecord, SessionMetrics } from '../types';
+import type { AuditGate, SwapRecord, SessionMetrics, AuditSettings } from '../types';
 
 export const GATE_DEFINITIONS: Omit<AuditGate, 'result' | 'value'>[] = [
   {
@@ -54,8 +54,37 @@ export function getRandomToken() {
   return TOKEN_POOL[Math.floor(Math.random() * TOKEN_POOL.length)];
 }
 
-export function buildGates(): AuditGate[] {
-  return GATE_DEFINITIONS.map(g => ({ ...g, result: 'idle' as const }));
+export function buildGates(settings?: AuditSettings): AuditGate[] {
+  return [
+    {
+      id: 1,
+      name: 'Mint Authority',
+      description: 'Mint authority must be renounced',
+      condition: 'Must be null',
+      result: 'idle',
+    },
+    {
+      id: 2,
+      name: 'Honeypot Score',
+      description: 'Transfer simulation risk score',
+      condition: `< ${settings?.honeypotThreshold ?? 0.05} score`,
+      result: 'idle',
+    },
+    {
+      id: 3,
+      name: 'Holder Concentration',
+      description: 'Top 10 holders supply share',
+      condition: `Top 10 ≤ ${settings?.maxHolderConc ?? 30}%`,
+      result: 'idle',
+    },
+    {
+      id: 4,
+      name: 'Liquidity Depth',
+      description: 'USD value locked in primary pool',
+      condition: `> $${(settings?.minLiquidity ?? 50000).toLocaleString()}`,
+      result: 'idle',
+    },
+  ];
 }
 
 export function generateAddress(): string {

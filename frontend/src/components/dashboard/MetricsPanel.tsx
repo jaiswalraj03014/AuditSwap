@@ -1,6 +1,8 @@
 import type { FC } from 'react';
 import type { SessionMetrics, SwapRecord } from '../../types';
 import { truncateAddress, truncateTxHash } from '../../data/mockData';
+import { useSettings } from '../../contexts/SettingsContext';
+import { exportSwapHistory } from '../../utils/exportCsv';
 
 interface Props {
   metrics: SessionMetrics;
@@ -70,6 +72,8 @@ const SwapRow: FC<{ swap: SwapRecord }> = ({ swap }) => (
 // ── Main component ──────────────────────────────────────────────────────────
 
 const MetricsPanel: FC<Props> = ({ metrics, swapHistory }) => {
+  const { settings } = useSettings();
+
   const passRate =
     metrics.tokensDetected > 0
       ? ((metrics.passed / metrics.tokensDetected) * 100).toFixed(1)
@@ -100,11 +104,11 @@ const MetricsPanel: FC<Props> = ({ metrics, swapHistory }) => {
           Audit Parameters
         </div>
         <div>
-          <ParamRow label="Min Liquidity" value="> $50,000" />
-          <ParamRow label="Max Holder Conc." value="≤ 30%" />
-          <ParamRow label="Honeypot Threshold" value="< 0.05" />
-          <ParamRow label="Swap Amount" value="0.50 SOL" />
-          <ParamRow label="Slippage Guard" value="2.0%" />
+          <ParamRow label="Min Liquidity" value={`> $${settings.minLiquidity.toLocaleString()}`} />
+          <ParamRow label="Max Holder Conc." value={`≤ ${settings.maxHolderConc}%`} />
+          <ParamRow label="Honeypot Threshold" value={`< ${settings.honeypotThreshold}`} />
+          <ParamRow label="Swap Amount" value={`${settings.swapAmount} SOL`} />
+          <ParamRow label="Slippage Guard" value={`${settings.slippage}%`} />
         </div>
       </div>
 
@@ -114,7 +118,18 @@ const MetricsPanel: FC<Props> = ({ metrics, swapHistory }) => {
           <span className="text-[10px] text-neutral-500 uppercase tracking-widest font-semibold">
             Swap History
           </span>
-          <span className="text-[9px] text-neutral-500">${totalValueUsd} total</span>
+          <div className="flex items-center space-x-3">
+            <span className="text-[9px] text-neutral-500">${totalValueUsd} total</span>
+            {swapHistory.length > 0 && (
+              <button
+                onClick={() => exportSwapHistory(swapHistory)}
+                className="text-[9px] text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 uppercase tracking-widest border border-neutral-200 dark:border-neutral-800 px-2 py-0.5 rounded transition-colors"
+                title="Export swap history as CSV"
+              >
+                Export CSV
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">

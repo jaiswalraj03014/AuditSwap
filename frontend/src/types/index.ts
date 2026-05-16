@@ -45,3 +45,11 @@ export interface SwapRecord {
   txHash: string;
   valueUsd: number;
 }
+
+export interface AuditSettings {
+  minLiquidity: number;
+  maxHolderConc: number;
+  honeypotThreshold: number;
+  swapAmount: number;
+  slippage: number;
+}

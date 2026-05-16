@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import type { TokenEntry, SwapRecord, SessionMetrics, EngineStatus, AuditGate } from '../types';
+import type { MutableRefObject } from 'react';
+import type { TokenEntry, SwapRecord, SessionMetrics, EngineStatus, AuditGate, AuditSettings } from '../types';
 import {
   getRandomToken,
   buildGates,
@@ -10,39 +11,38 @@ import {
   initialMetrics,
 } from '../data/mockData';
 
+const GATE_NAMES = ['Mint Authority', 'Honeypot Score', 'Holder Concentration', 'Liquidity Depth'];
+
 function generateGateValue(gateId: number): string {
   switch (gateId) {
-    case 1:
-      return Math.random() > 0.35 ? 'RENOUNCED' : 'PRESENT';
-    case 2:
-      return (Math.random() * 0.1).toFixed(4);
-    case 3:
-      return (Math.random() * 55 + 8).toFixed(1) + '%';
-    case 4:
-      return '$' + Math.floor(Math.random() * 250000 + 8000).toLocaleString();
-    default:
-      return '—';
+    case 1: return Math.random() > 0.35 ? 'RENOUNCED' : 'PRESENT';
+    case 2: return (Math.random() * 0.1).toFixed(4);
+    case 3: return (Math.random() * 55 + 8).toFixed(1) + '%';
+    case 4: return '$' + Math.floor(Math.random() * 250000 + 8000).toLocaleString();
+    default: return '—';
   }
 }
 
-function evaluateGate(gateId: number, value: string): 'pass' | 'fail' {
+function evaluateGate(gateId: number, value: string, settings: AuditSettings): 'pass' | 'fail' {
   switch (gateId) {
-    case 1:
-      return value === 'RENOUNCED' ? 'pass' : 'fail';
-    case 2:
-      return parseFloat(value) < 0.05 ? 'pass' : 'fail';
-    case 3:
-      return parseFloat(value.replace('%', '')) < 30 ? 'pass' : 'fail';
+    case 1: return value === 'RENOUNCED' ? 'pass' : 'fail';
+    case 2: return parseFloat(value) < settings.honeypotThreshold ? 'pass' : 'fail';
+    case 3: return parseFloat(value.replace('%', '')) < settings.maxHolderConc ? 'pass' : 'fail';
     case 4: {
       const num = parseInt(value.replace(/[$,]/g, ''), 10);
-      return num > 50000 ? 'pass' : 'fail';
+      return num > settings.minLiquidity ? 'pass' : 'fail';
     }
-    default:
-      return 'fail';
+    default: return 'fail';
   }
 }
 
-export function useMockEngine() {
+interface UseMockEngineOptions {
+  settingsRef: MutableRefObject<AuditSettings>;
+  onSwapExecuted: (symbol: string, valueUsd: number) => void;
+  onTokenRejected: (symbol: string, gateNum: number, gateName: string) => void;
+}
+
+export function useMockEngine({ settingsRef, onSwapExecuted, onTokenRejected }: UseMockEngineOptions) {
   const [feed, setFeed] = useState<TokenEntry[]>([]);
   const [activeToken, setActiveToken] = useState<TokenEntry | null>(null);
   const [swapHistory, setSwapHistory] = useState<SwapRecord[]>(initialSwapHistory);
@@ -50,11 +50,28 @@ export function useMockEngine() {
   const [engineStatus, setEngineStatus] = useState<EngineStatus>('SCANNING');
   const [uptime, setUptime] = useState(0);
   const [queueLength, setQueueLength] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   const mountedRef = useRef(true);
   const processingRef = useRef(false);
   const queueRef = useRef<TokenEntry[]>([]);
   const processRef = useRef<(token: TokenEntry) => void>(() => {});
+  const isPausedRef = useRef(false);
+
+  const onSwapRef = useRef(onSwapExecuted);
+  const onRejectRef = useRef(onTokenRejected);
+  onSwapRef.current = onSwapExecuted;
+  onRejectRef.current = onTokenRejected;
+
+  const pause = () => {
+    isPausedRef.current = true;
+    setIsPaused(true);
+  };
+
+  const resume = () => {
+    isPausedRef.current = false;
+    setIsPaused(false);
+  };
 
   useEffect(() => {
     return () => {
@@ -62,7 +79,6 @@ export function useMockEngine() {
     };
   }, []);
 
-  // Core audit engine — runs inside a single stable useEffect to avoid stale closures
   useEffect(() => {
     mountedRef.current = true; // re-arm after StrictMode double-invoke
 
@@ -75,7 +91,7 @@ export function useMockEngine() {
 
       setEngineStatus('AUDITING');
 
-      const workingGates: AuditGate[] = buildGates();
+      const workingGates: AuditGate[] = buildGates(settingsRef.current);
       setActiveToken({ ...token, status: 'auditing', gates: [...workingGates] });
 
       let allPassed = true;
@@ -91,7 +107,7 @@ export function useMockEngine() {
         if (!mountedRef.current) { processingRef.current = false; return; }
 
         const value = generateGateValue(i + 1);
-        const result = evaluateGate(i + 1, value);
+        const result = evaluateGate(i + 1, value, settingsRef.current);
 
         workingGates[i] = { ...workingGates[i], result, value };
         setActiveToken(prev => prev ? { ...prev, gates: [...workingGates] } : prev);
@@ -110,33 +126,31 @@ export function useMockEngine() {
       if (!mountedRef.current) { processingRef.current = false; return; }
 
       if (allPassed) {
+        const swapAmount = settingsRef.current.swapAmount;
         setEngineStatus('EXECUTING');
         setActiveToken(prev => prev ? { ...prev, status: 'swapping' } : prev);
 
         await sleep(1100);
         if (!mountedRef.current) { processingRef.current = false; return; }
 
+        const valueUsd = parseFloat((Math.random() * 130 + 12).toFixed(2));
         const swap: SwapRecord = {
           id: Date.now().toString(),
           symbol: token.symbol,
           address: token.address,
-          amount: 0.5,
+          amount: swapAmount,
           timestamp: getTimestamp(),
           txHash: generateTxHash(),
-          valueUsd: parseFloat((Math.random() * 130 + 12).toFixed(2)),
+          valueUsd,
         };
 
+        onSwapRef.current(token.symbol, valueUsd);
         setSwapHistory(prev => [swap, ...prev].slice(0, 20));
-        setFeed(prev =>
-          prev.map(t => t.id === token.id ? { ...t, status: 'swapped' as const } : t),
-        );
+        setFeed(prev => prev.map(t => t.id === token.id ? { ...t, status: 'swapped' as const } : t));
         setActiveToken(prev => prev ? { ...prev, status: 'swapped' as const } : prev);
-        setMetrics(prev => ({
-          ...prev,
-          passed: prev.passed + 1,
-          swapsExecuted: prev.swapsExecuted + 1,
-        }));
+        setMetrics(prev => ({ ...prev, passed: prev.passed + 1, swapsExecuted: prev.swapsExecuted + 1 }));
       } else {
+        onRejectRef.current(token.symbol, failGate, GATE_NAMES[failGate - 1]);
         setFeed(prev =>
           prev.map(t =>
             t.id === token.id ? { ...t, status: 'rejected' as const, rejectGate: failGate } : t,
@@ -154,7 +168,7 @@ export function useMockEngine() {
       processingRef.current = false;
       setEngineStatus('SCANNING');
 
-      if (queueRef.current.length > 0) {
+      if (queueRef.current.length > 0 && !isPausedRef.current) {
         const next = queueRef.current.shift()!;
         setQueueLength(queueRef.current.length);
         processRef.current(next);
@@ -164,7 +178,7 @@ export function useMockEngine() {
     processRef.current = processAudit;
 
     function addToken() {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || isPausedRef.current) return;
       const info = getRandomToken();
       const token: TokenEntry = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -173,7 +187,7 @@ export function useMockEngine() {
         name: info.name,
         discoveredAt: getTimestamp(),
         status: 'detected',
-        gates: buildGates(),
+        gates: buildGates(settingsRef.current),
       };
 
       setFeed(prev => [token, ...prev].slice(0, 30));
@@ -196,11 +210,12 @@ export function useMockEngine() {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Uptime counter
+  // Uptime counter — pauses when engine is paused
   useEffect(() => {
+    if (isPaused) return;
     const t = setInterval(() => setUptime(u => u + 1), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [isPaused]);
 
-  return { feed, activeToken, swapHistory, metrics, engineStatus, uptime, queueLength };
+  return { feed, activeToken, swapHistory, metrics, engineStatus, uptime, queueLength, isPaused, pause, resume };
 }

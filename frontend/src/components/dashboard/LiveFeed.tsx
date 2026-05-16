@@ -1,9 +1,11 @@
 import type { FC } from 'react';
 import type { TokenEntry, TokenStatus } from '../../types';
 import { truncateAddress } from '../../data/mockData';
+import { exportTokenFeed } from '../../utils/exportCsv';
 
 interface Props {
   feed: TokenEntry[];
+  onTokenSelect: (token: TokenEntry) => void;
 }
 
 interface StatusConfig {
@@ -46,12 +48,13 @@ const STATUS_MAP: Record<TokenStatus, StatusConfig> = {
   },
 };
 
-const TokenRow: FC<{ token: TokenEntry }> = ({ token }) => {
+const TokenRow: FC<{ token: TokenEntry; onClick: () => void }> = ({ token, onClick }) => {
   const cfg = STATUS_MAP[token.status];
 
   return (
     <div
-      className={`flex items-center justify-between py-1.5 px-2 rounded group token-row ${cfg.rowClass}`}
+      className={`flex items-center justify-between py-1.5 px-2 rounded group token-row cursor-pointer hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40 transition-colors ${cfg.rowClass}`}
+      onClick={onClick}
     >
       <div className="flex items-center space-x-2 min-w-0">
         <span className="text-[9px] text-neutral-500 w-[52px] flex-shrink-0 tabular-nums">
@@ -77,7 +80,7 @@ const TokenRow: FC<{ token: TokenEntry }> = ({ token }) => {
   );
 };
 
-const LiveFeed: FC<Props> = ({ feed }) => {
+const LiveFeed: FC<Props> = ({ feed, onTokenSelect }) => {
   const passedCount = feed.filter(t => t.status === 'swapped').length;
   const rejectedCount = feed.filter(t => t.status === 'rejected').length;
 
@@ -92,10 +95,21 @@ const LiveFeed: FC<Props> = ({ feed }) => {
               Live Token Stream
             </span>
           </div>
-          <span className="text-[9px] text-neutral-500 tabular-nums">{feed.length} seen</span>
+          <div className="flex items-center space-x-3">
+            <span className="text-[9px] text-neutral-500 tabular-nums">{feed.length} seen</span>
+            {feed.length > 0 && (
+              <button
+                onClick={() => exportTokenFeed(feed)}
+                className="text-[9px] text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 uppercase tracking-widest border border-neutral-200 dark:border-neutral-800 px-2 py-0.5 rounded transition-colors"
+                title="Export token feed as CSV"
+              >
+                Export CSV
+              </button>
+            )}
+          </div>
         </div>
         <p className="text-[9px] text-neutral-500 tracking-wide">
-          Birdeye /v2/tokens/new_listing
+          Birdeye /v2/tokens/new_listing · click to inspect
         </p>
       </div>
 
@@ -118,7 +132,9 @@ const LiveFeed: FC<Props> = ({ feed }) => {
             // Awaiting Birdeye stream...
           </div>
         ) : (
-          feed.map(token => <TokenRow key={token.id} token={token} />)
+          feed.map(token => (
+            <TokenRow key={token.id} token={token} onClick={() => onTokenSelect(token)} />
+          ))
         )}
       </div>
 

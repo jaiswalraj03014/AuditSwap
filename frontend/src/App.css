@@ -94,6 +94,52 @@
   animation: spinSlow 1.4s linear infinite;
 }
 
+/* ── Toast slide-in ─────────────────────────────────────────────────────── */
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-slide-in {
+  animation: toastSlideIn 0.18s ease-out forwards;
+}
+
+/* ── Modal enter ────────────────────────────────────────────────────────── */
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.modal-enter {
+  animation: modalEnter 0.18s ease-out forwards;
+}
+
+/* ── Settings drawer slide-in ───────────────────────────────────────────── */
+@keyframes drawerSlideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.settings-drawer {
+  animation: drawerSlideIn 0.2s ease-out forwards;
+}
+
 /* ── Scan line shimmer on audit rows ────────────────────────────────────── */
 @keyframes shimmer {
   0% {

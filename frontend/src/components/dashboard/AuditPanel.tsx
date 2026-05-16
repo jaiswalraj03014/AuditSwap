@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import type { TokenEntry, AuditGate, GateResult, EngineStatus } from '../../types';
 import { truncateAddress } from '../../data/mockData';
+import { useSettings } from '../../contexts/SettingsContext';
 
 interface Props {
   token: TokenEntry | null;
@@ -52,23 +53,16 @@ const GateRow: FC<GateRowProps> = ({ gate, index }) => {
     <div
       className={`grid grid-cols-[2rem_1fr_1fr_1fr_5rem] items-center gap-4 px-5 py-3.5 border-b border-neutral-200/60 dark:border-neutral-800/60 transition-opacity duration-300 ${res.rowClass}`}
     >
-      {/* Gate number */}
       <div className="text-[10px] text-neutral-500 dark:text-neutral-600 font-semibold tabular-nums">
         G{index + 1}
       </div>
-
-      {/* Gate name + description */}
       <div>
         <div className="text-[11px] text-neutral-800 dark:text-neutral-300 font-semibold tracking-wide">
           {gate.name}
         </div>
         <div className="text-[9px] text-neutral-500 dark:text-neutral-600 mt-0.5">{gate.description}</div>
       </div>
-
-      {/* Condition */}
       <div className="text-[10px] text-neutral-500 dark:text-neutral-600 font-mono">{gate.condition}</div>
-
-      {/* Measured value */}
       <div className="text-[11px] text-neutral-600 dark:text-neutral-400 font-mono tabular-nums">
         {gate.result === 'idle' ? (
           <span className="text-neutral-400 dark:text-neutral-700">—</span>
@@ -78,8 +72,6 @@ const GateRow: FC<GateRowProps> = ({ gate, index }) => {
           gate.value ?? '—'
         )}
       </div>
-
-      {/* Result */}
       <div className="flex items-center space-x-1.5 justify-end">
         <span className={`text-sm leading-none ${res.iconClass}`}>{res.icon}</span>
         <span className={`text-[9px] font-bold tracking-widest uppercase ${lbl.labelClass}`}>
@@ -121,6 +113,9 @@ const IdleState: FC = () => (
 // ── Outcome banner ──────────────────────────────────────────────────────────
 
 const OutcomeBanner: FC<{ token: TokenEntry }> = ({ token }) => {
+  const { settings } = useSettings();
+  const gateNames = ['Mint Authority', 'Honeypot Score', 'Holder Concentration', 'Liquidity Depth'];
+
   if (token.status === 'swapping') {
     return (
       <div className="mx-5 mb-4 border border-neutral-300/50 dark:border-neutral-700/50 rounded p-4 bg-neutral-100/50 dark:bg-neutral-900/50">
@@ -132,7 +127,7 @@ const OutcomeBanner: FC<{ token: TokenEntry }> = ({ token }) => {
         </div>
         <div className="space-y-1 text-[10px] text-neutral-500">
           <div>→ Fetching quote from Jupiter v6 /quote</div>
-          <div>→ Swap amount: 0.50 SOL · Slippage: 2.0%</div>
+          <div>→ Swap amount: {settings.swapAmount} SOL · Slippage: {settings.slippage}%</div>
           <div className="flex items-center space-x-1">
             <span>→ Signing &amp; submitting transaction</span>
             <span className="text-neutral-400 dark:text-neutral-700 animate-pulse">...</span>
@@ -152,14 +147,13 @@ const OutcomeBanner: FC<{ token: TokenEntry }> = ({ token }) => {
           </span>
         </div>
         <div className="text-[10px] text-neutral-500">
-          Token acquired · 0.50 SOL deployed via Jupiter v6 atomic swap
+          Token acquired · {settings.swapAmount} SOL deployed via Jupiter v6 atomic swap
         </div>
       </div>
     );
   }
 
   if (token.status === 'rejected' && token.rejectGate) {
-    const gateNames = ['Mint Authority', 'Honeypot Score', 'Holder Concentration', 'Liquidity Depth'];
     return (
       <div className="mx-5 mb-4 border border-red-300/30 dark:border-red-900/30 rounded p-4 bg-red-50/50 dark:bg-red-950/10">
         <div className="flex items-center space-x-2 mb-2">
@@ -215,6 +209,7 @@ const ProgressBar: FC<{ gates: AuditGate[] }> = ({ gates }) => {
 // ── Main component ──────────────────────────────────────────────────────────
 
 const AuditPanel: FC<Props> = ({ token, engineStatus }) => {
+  const { settings } = useSettings();
   const isActive = token !== null;
   const gatesComplete =
     token?.status === 'rejected' || token?.status === 'swapping' || token?.status === 'swapped';
@@ -273,15 +268,12 @@ const AuditPanel: FC<Props> = ({ token, engineStatus }) => {
       ) : (
         <>
           <TableHeader />
-
           <div className="flex-1 overflow-y-auto">
             {token.gates.map((gate, idx) => (
               <GateRow key={gate.id} gate={gate} index={idx} />
             ))}
           </div>
-
           {gatesComplete && <OutcomeBanner token={token} />}
-
           <ProgressBar gates={token.gates} />
         </>
       )}
@@ -297,7 +289,7 @@ const AuditPanel: FC<Props> = ({ token, engineStatus }) => {
             Swap: Jupiter v6 /quote → /swap
           </span>
         </div>
-        <span className="text-[9px] text-neutral-500">Slippage: 2.0%</span>
+        <span className="text-[9px] text-neutral-500">Slippage: {settings.slippage}%</span>
       </div>
     </div>
   );
