@@ -163,6 +163,25 @@ function TokenLogo({ token }: { token: TokenEntry }) {
   );
 }
 
+function AppLogo() {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  return (
+    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.045]">
+      {!imageFailed ? (
+        <img
+          src="/logo.png"
+          alt="AuditSwap logo"
+          className="h-full w-full object-cover"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <span className="font-mono text-sm font-semibold text-zinc-100">AS</span>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [status, setStatus] = useState('INITIALIZING');
   const [logs, setLogs] = useState<SettlementLog[]>([]);
@@ -170,6 +189,7 @@ export default function App() {
   const [tokensScanned, setTokensScanned] = useState(0);
   const [lastSync, setLastSync] = useState('Awaiting status');
   const [connectionMode, setConnectionMode] = useState<'live' | 'mock'>('live');
+  const terminalScrollRef = useRef<HTMLDivElement | null>(null);
   const terminalBottomRef = useRef<HTMLDivElement | null>(null);
   const countedQueryLogsRef = useRef<Set<string>>(new Set());
 
@@ -241,7 +261,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    terminalBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const terminal = terminalScrollRef.current;
+
+    if (terminal) {
+      terminal.scrollTo({
+        top: terminal.scrollHeight,
+        behavior: logs.length > 1 ? 'smooth' : 'auto',
+      });
+    } else {
+      terminalBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
   }, [logs.length]);
 
   const statusDot = useMemo(() => {
@@ -277,15 +306,18 @@ export default function App() {
 
       <div className="relative z-10 flex h-full flex-col">
         <header className="flex h-[72px] shrink-0 items-center justify-between px-5 sm:px-8">
-          <div className="min-w-0">
-            <div className="text-xs text-zinc-500">Autonomous DeFAI Settlement</div>
-            <h1 className="mt-1 truncate text-2xl font-semibold text-white">AuditSwap // Core</h1>
+          <div className="flex min-w-0 items-center gap-3">
+            <AppLogo />
+            <div className="min-w-0">
+              <h1 className="truncate text-2xl font-semibold text-white">AuditSwap</h1>
+              <div className="mt-0.5 text-xs text-zinc-500">Powered by Birdeye</div>
+            </div>
           </div>
 
           <div className="flex min-w-0 items-center gap-3 font-mono text-xs text-zinc-300">
             <div className="hidden items-center gap-2 rounded-full bg-white/[0.045] px-3 py-2 sm:flex">
               <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-300" />
-              <span>Solana Mainnet</span>
+              <span>Solana Devnet</span>
             </div>
             <div className="hidden rounded-full bg-white/[0.045] px-3 py-2 text-zinc-400 sm:block">
               {connectionMode === 'live' ? 'Live API' : 'Mock Mode'}
@@ -297,15 +329,11 @@ export default function App() {
           </div>
         </header>
 
-        <main className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-8 lg:pb-8">
+        <main className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(460px,0.95fr)] lg:px-8 lg:pb-8">
           <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#080809]/92 shadow-[0_24px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)]">
             <div className="flex shrink-0 items-start justify-between gap-6 px-5 py-5 sm:px-6">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Token Registry</div>
-                <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">Mapped assets</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-                  Live token metadata from the settlement backend, including logo, name, address, and current audit state.
-                </p>
+              <div className="min-w-0">
+                <h2 className="text-2xl font-semibold text-white sm:text-3xl">Token Registry</h2>
               </div>
               <div className="hidden shrink-0 rounded-2xl border border-white/[0.07] bg-black/30 px-5 py-3 text-right sm:block">
                 <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Assets</div>
@@ -316,21 +344,21 @@ export default function App() {
             <div className="mx-5 h-px bg-white/[0.06] sm:mx-6" />
 
             <div className="grid shrink-0 grid-cols-2 gap-3 px-5 py-4 sm:grid-cols-4 sm:px-6">
-              <div>
+              <div className="rounded-xl border border-white/[0.055] bg-black/25 p-3">
                 <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Queries</div>
                 <div className="mt-1 font-mono text-xl text-zinc-100">{tokensScanned.toLocaleString()}</div>
               </div>
-              <div>
+              <div className="rounded-xl border border-white/[0.055] bg-black/25 p-3">
                 <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Success</div>
                 <div className="mt-1 font-mono text-xl text-emerald-300">{logCounts.SUCCESS}</div>
               </div>
-              <div>
+              <div className="rounded-xl border border-white/[0.055] bg-black/25 p-3">
                 <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Warnings</div>
                 <div className="mt-1 font-mono text-xl text-amber-300">{logCounts.WARN}</div>
               </div>
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Last Sync</div>
-                <div className="mt-1 truncate font-mono text-sm text-zinc-300">{lastSync}</div>
+              <div className="rounded-xl border border-white/[0.055] bg-black/25 p-3">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Slippage</div>
+                <div className="mt-1 font-mono text-xl text-zinc-100">2.0%</div>
               </div>
             </div>
 
@@ -350,13 +378,13 @@ export default function App() {
                   {tokens.map((token) => (
                     <div
                       key={token.address}
-                      className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-white/[0.06] bg-black/30 p-4 transition-colors hover:border-white/[0.13] hover:bg-white/[0.035]"
+                      className="grid min-h-[96px] grid-cols-[56px_minmax(0,1fr)] gap-4 rounded-2xl border border-white/[0.06] bg-black/30 p-4 transition-colors hover:border-white/[0.13] hover:bg-white/[0.035] sm:grid-cols-[64px_minmax(0,1fr)_auto]"
                     >
-                      <div className="h-14 w-14">
+                      <div className="h-14 w-14 sm:h-16 sm:w-16">
                         <TokenLogo token={token} />
                       </div>
 
-                      <div className="min-w-0">
+                      <div className="min-w-0 self-center">
                         <div className="flex min-w-0 items-baseline gap-2">
                           <div className="truncate text-lg font-semibold text-zinc-100">{token.name}</div>
                           <div className="shrink-0 font-mono text-xs text-zinc-500">{token.symbol}</div>
@@ -367,7 +395,7 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className={`shrink-0 rounded-lg border px-3 py-1.5 font-mono text-[10px] uppercase ${tokenStatusStyle[token.status]}`}>
+                      <div className={`col-span-2 w-fit self-center rounded-lg border px-3 py-1.5 font-mono text-[10px] uppercase sm:col-span-1 ${tokenStatusStyle[token.status]}`}>
                         {token.status}
                       </div>
                     </div>
@@ -377,103 +405,71 @@ export default function App() {
             </div>
           </section>
 
-          <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0b0b0d]/94 shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)]">
-            <div className="shrink-0 px-5 py-4">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Session Metrics</div>
-              <h2 className="mt-1.5 text-lg font-semibold text-white">Settlement session</h2>
-            </div>
-
-            <div className="h-px bg-white/[0.06]" />
-
-            <div className="grid shrink-0 grid-cols-2 gap-2.5 px-5 py-4">
-              <div className="col-span-2 rounded-xl border border-white/[0.06] bg-black/30 p-3">
-                <div className="text-[11px] text-zinc-500">Data Source</div>
-                <div className="mt-1 truncate text-sm text-zinc-100">
-                  {connectionMode === 'live' ? 'Birdeye Enterprise API' : 'Mock Registry Fallback'}
+          <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-4">
+            <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0b0b0d]/94 shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div className="grid grid-cols-2 gap-3 p-4">
+                <div className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
+                  <div className="text-[11px] text-zinc-500">Data Source</div>
+                  <div className="mt-1 truncate text-sm text-zinc-100">
+                    {connectionMode === 'live' ? 'Birdeye Enterprise API' : 'Mock Registry Fallback'}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
+                  <div className="text-[11px] text-zinc-500">Last Sync</div>
+                  <div className="mt-1 truncate font-mono text-sm text-zinc-100">{lastSync}</div>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
+                  <div className="text-[11px] text-zinc-500">Mapped</div>
+                  <div className="mt-1 font-mono text-2xl text-zinc-100">{tokens.length.toLocaleString()}</div>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
+                  <div className="text-[11px] text-zinc-500">Queries</div>
+                  <div className="mt-1 font-mono text-2xl text-zinc-100">{tokensScanned.toLocaleString()}</div>
                 </div>
               </div>
+            </section>
 
-              <div className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
-                <div className="text-[11px] text-zinc-500">Queries</div>
-                <div className="mt-1 font-mono text-2xl font-semibold tabular-nums text-white">
-                  {tokensScanned.toLocaleString()}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
-                <div className="text-[11px] text-zinc-500">Mapped</div>
-                <div className="mt-1 font-mono text-2xl text-zinc-100">{tokens.length.toLocaleString()}</div>
-              </div>
-
-              <div className="col-span-2 rounded-xl border border-white/[0.06] bg-black/30 p-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-[11px] text-zinc-500">Slippage Guard</div>
-                  <div className="font-mono text-base text-zinc-100">2.0%</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mx-5 h-px bg-white/[0.06]" />
-
-            <div className="flex min-h-0 flex-1 flex-col px-5 py-4">
-              <div className="mb-3 flex shrink-0 items-center justify-between">
+            <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#080809]/94 shadow-[0_24px_80px_rgba(0,0,0,0.30),inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div className="flex shrink-0 items-center justify-between px-5 py-4">
                 <div>
-                  <div className="text-xs text-zinc-500">Execution Terminal</div>
-                  <div className="mt-1 font-mono text-[11px] text-zinc-600">polling 1000ms</div>
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">Execution Terminal</div>
+                  <h2 className="mt-1 text-lg font-semibold text-white">Live telemetry</h2>
                 </div>
-                <div className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] px-2.5 py-1 font-mono text-[10px] text-zinc-500">
+                <div className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] px-3 py-1.5 font-mono text-[11px] text-zinc-500">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                  Live
+                  1000ms
                 </div>
               </div>
 
-              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 font-mono text-[11px]">
+              <div className="mx-5 h-px bg-white/[0.06]" />
+
+              <div ref={terminalScrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 font-mono text-[11px]">
                 {logs.length === 0 ? (
-                  <div className="rounded-xl border border-white/[0.06] bg-black/25 p-4 text-sm leading-6 text-zinc-500">
+                  <div className="flex h-full items-center justify-center rounded-xl border border-white/[0.06] bg-black/25 p-4 text-center text-sm leading-6 text-zinc-500">
                     Waiting for settlement logs.
                   </div>
                 ) : (
-                  logs.map((log, index) => (
-                    <div
-                      key={`${log.timestamp}-${index}-${log.type}-${log.message}`}
-                      className="rounded-xl border border-white/[0.045] bg-black/30 p-3"
-                    >
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <span className="tabular-nums text-zinc-600">{formatLogTime(log.timestamp)}</span>
-                        <span className={`rounded-md px-2 py-1 text-[9px] font-semibold ${typeStyle[log.type]}`}>
-                          {log.type}
-                        </span>
+                  <div className="space-y-2">
+                    {logs.map((log, index) => (
+                      <div
+                        key={`${log.timestamp}-${index}-${log.type}-${log.message}`}
+                        className="rounded-xl border border-white/[0.045] bg-black/30 p-3 transition-colors hover:border-white/[0.09] hover:bg-white/[0.03]"
+                      >
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <span className="tabular-nums text-zinc-600">{formatLogTime(log.timestamp)}</span>
+                          <span className={`rounded-md px-2 py-1 text-[9px] font-semibold ${typeStyle[log.type]}`}>
+                            {log.type}
+                          </span>
+                        </div>
+                        <div className={`break-words leading-5 ${messageStyle[log.type]}`}>{log.message}</div>
                       </div>
-                      <div className={`break-words leading-5 ${messageStyle[log.type]}`}>{log.message}</div>
-                    </div>
-                  ))
+                    ))}
+                    <div ref={terminalBottomRef} />
+                  </div>
                 )}
-                <div ref={terminalBottomRef} />
               </div>
-            </div>
+            </section>
 
-            <div className="mx-5 h-px bg-white/[0.06]" />
-
-            <div className="shrink-0 px-5 py-4">
-              <div className="text-xs text-zinc-500">Risk Protocol</div>
-              <p className="mt-2 text-xs leading-5 text-zinc-400">
-                The Markovian Execution Protocol evaluates every route as a state transition, balancing live
-                liquidity, recent slippage, and settlement pressure before autonomous execution.
-              </p>
-            </div>
-
-            <div className="shrink-0 px-5 pb-5">
-              <div className="rounded-xl border border-white/[0.06] bg-black/35 p-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500">Core URL</span>
-                  <span className="font-mono text-zinc-300">audit-swap.vercel.app</span>
-                </div>
-                <div className="mt-3 flex items-center justify-between text-xs">
-                  <span className="text-zinc-500">Errors</span>
-                  <span className="font-mono text-rose-300">{logCounts.ERROR}</span>
-                </div>
-              </div>
-            </div>
           </aside>
         </main>
       </div>
